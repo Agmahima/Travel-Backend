@@ -23,7 +23,7 @@
     "express-session": "^1.18.1",
     "gitignore": "^0.7.0",
     "memorystore": "^1.6.7",
-    "mongoose": "^8.14.2",
+    "mongoose": "^8.15.0",
     "openai": "^4.98.0",
     "zod": "^3.24.4"
   },
