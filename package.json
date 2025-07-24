@@ -14,6 +14,8 @@
   "type": "commonjs",
   "dependencies": {
     "@replit/vite-plugin-cartographer": "^0.1.2",
+    "amadeus": "^11.0.0",
+    "axios": "^1.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.1",

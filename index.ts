@@ -2,6 +2,11 @@ require('dotenv').config();
 import express, { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { Express } from "express-serve-static-core";
+import  flightRoutes from "./routes/flightRoutes"; // Adjust the path as necessary
+
+var amadeus = require("amadeus");
+
+const { baseDbConnection } = require("./dbConnection");
 
 const app = express();
 
@@ -67,6 +72,35 @@ app.use((req, res, next) => {
   }
 })();
 
+app.use('/api/flights', flightRoutes);
+
+
+
+baseDbConnection.on('connected', () => console.log('Connected to dev-base database'));
+
+baseDbConnection.on('error', (err: any) =>
+  console.error('Error connecting to dev-base database:', err)
+);
+
+
+var amadeus = new amadeus({
+  clientId: process.env.AMADEUS_CLIENT_ID || "missing-client-id",
+  clientSecret: process.env.AMADEUS_CLIENT_SECRET || "missing-client-secret",
+  // serverUrl: process.env.AMADEUS_SERVER_URL || "https://test.api.amadeus.com"
+});
+
+// amadeus.shopping.flightOffersSearch.get({
+//   originLocationCode: 'SYD',
+//   destinationLocationCode: 'BKK',
+//   departureDate: '2025-07-07',
+//   adults: 1,
+// }).then(function ( response: { data: any; } ) {
+//   console.log(response.data);
+// }).catch(function (responseError: any) {
+//   console.error("Error fetching flight offers:", responseError);
+
+// });
+  
 // Function to serve static files (no Vite)
 function serveStatic(app: Express) {
   // Replace 'public' with the directory where your static assets are located

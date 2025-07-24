@@ -1,0 +1,173 @@
+[
+    {
+      "destination": "Jaipur",
+      "from": "Bangalore",
+      "days": [
+        {
+          "day": 1,
+          "date": "2025-07-01",
+          "activities": [
+            {
+              "time": "6:00 AM - 8:30 AM",
+              "title": "Flight from Bangalore to Jaipur",
+              "description": "Early morning flight departure from Bengaluru Airport to Jaipur Airport",
+              "location": "Bengaluru Airport to Jaipur Airport",
+              "cost": "₹8500",
+              "category": "transportation",
+              "booked": false
+            },
+            {
+              "time": "9:00 AM - 10:30 AM",
+              "title": "Hotel Check-in and Freshen Up",
+              "description": "Check into your hotel, freshen up and have breakfast",
+              "location": "Hotel Pearl Palace, Hathroi Fort",
+              "cost": "₹1500",
+              "category": "accommodation",
+              "booked": false
+            },
+            {
+              "time": "11:00 AM - 1:00 PM",
+              "title": "City Palace Complex",
+              "description": "Explore the magnificent City Palace with its courtyards, gardens, and museums showcasing royal artifacts",
+              "location": "City Palace Road, Jaipur",
+              "cost": "₹500",
+              "category": "sightseeing",
+              "booked": false
+            },
+            {
+              "time": "1:00 PM - 2:30 PM",
+              "title": "Traditional Rajasthani Lunch",
+              "description": "Enjoy authentic Rajasthani thali at a local restaurant",
+              "location": "Chokhi Dhani Restaurant",
+              "cost": "₹800",
+              "category": "dining",
+              "booked": false
+            },
+            {
+              "time": "3:00 PM - 5:00 PM",
+              "title": "Hawa Mahal (Palace of Winds)",
+              "description": "Visit the iconic pink sandstone palace with its intricate latticed windows",
+              "location": "Hawa Mahal Road, Badi Choupad",
+              "cost": "₹200",
+              "category": "sightseeing",
+              "booked": false
+            },
+            {
+              "time": "5:30 PM - 7:00 PM",
+              "title": "Johari Bazaar Shopping",
+              "description": "Shop for traditional Rajasthani jewelry, textiles, and handicrafts",
+              "location": "Johari Bazaar, Old City",
+              "cost": "₹2000",
+              "category": "shopping",
+              "booked": false
+            },
+            {
+              "time": "7:30 PM - 9:00 PM",
+              "title": "Dinner at Rooftop Restaurant",
+              "description": "Enjoy dinner with a view of the illuminated city",
+              "location": "Sky Waltz Restaurant, Hathroi Fort",
+              "cost": "₹1200",
+              "category": "dining",
+              "booked": false
+            },
+            {
+              "time": "9:30 PM - 10:30 PM",
+              "title": "Evening Stroll at Albert Hall",
+              "description": "Take a peaceful evening walk around the beautifully lit Albert Hall Museum",
+              "location": "Albert Hall Museum, Ram Niwas Garden",
+              "cost": "₹0",
+              "category": "leisure",
+              "booked": false
+            }
+          ]
+        },
+        {
+          "day": 2,
+          "date": "2025-07-02",
+          "activities": [
+            {
+              "time": "6:00 AM - 7:00 AM",
+              "title": "Early Morning Hotel Breakfast",
+              "description": "Quick breakfast at the hotel before heading out",
+              "location": "Hotel Pearl Palace",
+              "cost": "₹300",
+              "category": "dining",
+              "booked": false
+            },
+            {
+              "time": "7:30 AM - 11:00 AM",
+              "title": "Amber Fort (Amer Fort)",
+              "description": "Explore the magnificent Amber Fort with its stunning architecture, mirror palace, and elephant rides",
+              "location": "Amer, Jaipur",
+              "cost": "₹550",
+              "category": "sightseeing",
+              "booked": false
+            },
+            {
+              "time": "11:30 AM - 12:30 PM",
+              "title": "Jal Mahal (Water Palace)",
+              "description": "Photo stop at the beautiful Water Palace surrounded by Man Sagar Lake",
+              "location": "Amer Road, Jaipur",
+              "cost": "₹0",
+              "category": "sightseeing",
+              "booked": false
+            },
+            {
+              "time": "1:00 PM - 2:30 PM",
+              "title": "Lunch at Local Restaurant",
+              "description": "Enjoy traditional Rajasthani dal baati churma and other local delicacies",
+              "location": "Laxmi Mishtan Bhandar",
+              "cost": "₹600",
+              "category": "dining",
+              "booked": false
+            },
+            {
+              "time": "3:00 PM - 5:00 PM",
+              "title": "Jantar Mantar Observatory",
+              "description": "Visit the UNESCO World Heritage astronomical observatory with ancient instruments",
+              "location": "Jantar Mantar Road, Jaipur",
+              "cost": "₹200",
+              "category": "sightseeing",
+              "booked": false
+            },
+            {
+              "time": "5:30 PM - 7:00 PM",
+              "title": "Bapu Bazaar Shopping",
+              "description": "Shop for textiles, leather goods, and souvenirs at the famous Bapu Bazaar",
+              "location": "Bapu Bazaar, Sanganeri Gate",
+              "cost": "₹1500",
+              "category": "shopping",
+              "booked": false
+            },
+            {
+              "time": "7:30 PM - 9:00 PM",
+              "title": "Farewell Dinner",
+              "description": "Special farewell dinner with traditional Rajasthani folk music and dance",
+              "location": "Spice Court Restaurant",
+              "cost": "₹1500",
+              "category": "dining",
+              "booked": false
+            },
+            {
+              "time": "9:30 PM - 10:30 PM",
+              "title": "Hotel Check-out and Departure Prep",
+              "description": "Pack belongings and prepare for departure",
+              "location": "Hotel Pearl Palace",
+              "cost": "₹0",
+              "category": "departure",
+              "booked": false
+            },
+            {
+              "time": "11:00 PM - 1:30 AM",
+              "title": "Flight to Bangalore",
+              "description": "Late night flight back to Bangalore",
+              "location": "Jaipur Airport to Bengaluru Airport",
+              "cost": "₹8500",
+              "category": "transportation",
+              "booked": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
