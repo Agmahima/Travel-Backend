@@ -10,7 +10,7 @@ export const tripController = {
    */
   getAllTrips: async (req: Request, res: Response): Promise<void> => {
     try {
-      const userId = req.session.userId;
+      const userId = req.query.userId || req.session.userId;
       console.log("User ID from session:", userId); // Log the userId for debugging
       if (!userId) {
         res.status(400).json({ message: "User ID is missing in session" });
