@@ -1,21 +1,40 @@
 const mongoose = require('mongoose');
 const { baseDbConnection } = require('../dbConnection'); // Adjust the path as necessary
 const itineraryDaySchema = new mongoose.Schema({
-    itineraryId : { type: mongoose.Schema.Types.ObjectId, ref: 'Itinerary',required:true },
-    dayNumber:Number,
-    date: Date,
+  itineraryId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Trip', // Reference to the main trip
+    required: true 
+  },
+  dayNumber: { 
+    type: Number, 
+    required: true 
+  },
+  date: { 
+    type: Date, 
+    required: true 
+  },
+  location: String,
+  activities: [{
+    title: String,
+    description: String,
+    time: String,
+    duration: String,
     location: String,
-    activities: [String],
-    accommodation: String,
-    transportation: String,
-    meals: {
-        breakfast: String,
-        lunch: String,
-        dinner: String
-    },
-    estimatedCost: Number
+    cost: String,
+    category: String
+  }],
+  accommodation: String,
+  transportation: String,
+  meals: {
+    breakfast: String,
+    lunch: String,
+    dinner: String
+  },
+  estimatedCost: Number
+}, {
+  timestamps: true
 });
 
-// module.exports = baseDbConnection.model('ItineraryDay', itineraryDaySchema); // Ensure 'ItineraryDay' is exactly as used
 const ItineraryDay = baseDbConnection.model('ItineraryDay', itineraryDaySchema);
-export default ItineraryDay; // ✅ Use default export
+module.exports = ItineraryDay;

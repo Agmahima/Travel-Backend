@@ -2,9 +2,8 @@ require('dotenv').config();
 import express, { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { Express } from "express-serve-static-core";
-import  flightRoutes from "./routes/flightRoutes"; // Adjust the path as necessary
-
-var amadeus = require("amadeus");
+import flightRoutes from "./routes/flightRoutes"; // Adjust the path if necessary
+import { authenticate } from "./middleware/authenticate";
 
 const { baseDbConnection } = require("./dbConnection");
 
@@ -23,6 +22,7 @@ app.use((req, res, next) => {
   const originalResJson = res.json.bind(res) as typeof res.json;
 
   res.json = function (bodyJson, ...args) {
+    if (res.headersSent) return res; // Prevent sending headers after response
     capturedJsonResponse = bodyJson;
     return originalResJson(bodyJson, ...args);
   };
@@ -41,25 +41,48 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      // log(logLine); // You can uncomment this to log the requests
+      // Uncomment this if you want to log to console
+      // console.log(logLine);
     }
   });
 
   next();
 });
 
+// Connect to MongoDB
+baseDbConnection.on('connected', () => console.log('Connected to dev-base database'));
+baseDbConnection.on('error', (err: any) =>
+  console.error('Error connecting to dev-base database:', err)
+);
+
+// Initialize Amadeus client
+var amadeus = new (require("amadeus"))({
+  clientId: process.env.AMADEUS_CLIENT_ID || "missing-client-id",
+  clientSecret: process.env.AMADEUS_CLIENT_SECRET || "missing-client-secret"
+});
+
+// Function to serve static files (no Vite)
+function serveStatic(app: Express) {
+  app.use(express.static("public")); // Replace 'public' if static assets live elsewhere
+}
+
+// Start app
 (async () => {
   try {
-    // Register API routes
+    // Register your other routes (e.g. /api/auth etc.)
     await registerRoutes(app);
 
-    // Global error handler
+    // Attach flight routes BEFORE the error handler
+    app.use('/api/flights', flightRoutes);
+
+    // Global error handler (should always come last)
     app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+      if (res.headersSent) return;
       const status = err.status || 500;
       res.status(status).json({ message: err.message || "Internal Server Error" });
     });
 
-    // Serve static files in production
+    // Serve static files
     serveStatic(app);
 
     const port = 5000;
@@ -71,38 +94,3 @@ app.use((req, res, next) => {
     process.exit(1);
   }
 })();
-
-app.use('/api/flights', flightRoutes);
-
-
-
-baseDbConnection.on('connected', () => console.log('Connected to dev-base database'));
-
-baseDbConnection.on('error', (err: any) =>
-  console.error('Error connecting to dev-base database:', err)
-);
-
-
-var amadeus = new amadeus({
-  clientId: process.env.AMADEUS_CLIENT_ID || "missing-client-id",
-  clientSecret: process.env.AMADEUS_CLIENT_SECRET || "missing-client-secret",
-  // serverUrl: process.env.AMADEUS_SERVER_URL || "https://test.api.amadeus.com"
-});
-
-// amadeus.shopping.flightOffersSearch.get({
-//   originLocationCode: 'SYD',
-//   destinationLocationCode: 'BKK',
-//   departureDate: '2025-07-07',
-//   adults: 1,
-// }).then(function ( response: { data: any; } ) {
-//   console.log(response.data);
-// }).catch(function (responseError: any) {
-//   console.error("Error fetching flight offers:", responseError);
-
-// });
-  
-// Function to serve static files (no Vite)
-function serveStatic(app: Express) {
-  // Replace 'public' with the directory where your static assets are located
-  app.use(express.static("public"));
-}

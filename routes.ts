@@ -362,9 +362,8 @@ import { userController } from './controllers/userController';
 import { destinationController } from './controllers/destinationController';
 import { tripController } from './controllers/tripController';
 import { transportationBookingController } from './controllers/transportationBookingController';
-// import { itineraryController } from './controllers/itineraryController';
 import { itineraryController } from './controllers/itineryController';
-// import { authMiddleware } from './middleware/authMiddleware';
+import { authenticate } from './middleware/authenticate';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const SessionStore = MemoryStore(session);
@@ -377,10 +376,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Auth Routes
-  app.post('/api/register', userController.register);
-  app.post('/api/login', userController.login);
-  app.post('/api/logout', userController.logout);
-  app.get('/api/user',  userController.getCurrentUser);
+  // app.post('/api/register', userController.register);
+  // app.post('/api/login', userController.login);
+  // app.post('/api/logout', userController.logout);
+  // app.get('/api/user',  userController.getCurrentUser);
+
+  app.post('/api/auth/register', userController.register);
+  app.post('/api/auth/login', userController.login);
+  app.post('/api/auth/logout', userController.logout);
+  app.get('/api/auth/me', authenticate, userController.getCurrentUser);
 
   // Destination Routes
   app.get('/api/destinations', destinationController.getAllDestinations);

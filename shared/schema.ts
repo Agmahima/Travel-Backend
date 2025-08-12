@@ -54,14 +54,22 @@ export const trips = pgTable("trips", {
   status: text("status").default("planned"),
 });
 
-export const insertTripSchema = createInsertSchema(trips).pick({
-  userId: true,
-  destination: true,
-  startDate: true,
-  endDate: true,
-  adults: true,
-  children: true,
-  preferences: true,
+export const insertTripSchema = z.object({
+  userId: z.string().length(24, "Invalid userId"),
+  destinations: z.array(
+    z.object({
+      location: z.string(),
+      daysToStay: z.number()
+    })
+  ).optional(),
+  destination: z.string().optional(), // backward compatibility for single-city trip
+  startDate: z.coerce.date(), // accepts ISO string and converts to Date
+  endDate: z.coerce.date(),
+  adults: z.number(),
+  children: z.number().optional().default(0),
+  preferences: z.record(z.any()).optional(),
+  itinerary: z.any().optional(), // You can define stricter structure if needed
+  status: z.string().optional().default("planned")
 });
 
 // Transportation bookings schema
