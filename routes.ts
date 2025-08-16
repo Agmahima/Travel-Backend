@@ -367,6 +367,7 @@ import { authenticate } from './middleware/authenticate';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const SessionStore = MemoryStore(session);
+  
   app.use(session({
     secret: 'travelease-secret-key',
     resave: false,
@@ -376,11 +377,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Auth Routes
-  // app.post('/api/register', userController.register);
-  // app.post('/api/login', userController.login);
-  // app.post('/api/logout', userController.logout);
-  // app.get('/api/user',  userController.getCurrentUser);
-
   app.post('/api/auth/register', userController.register);
   app.post('/api/auth/login', userController.login);
   app.post('/api/auth/logout', userController.logout);
@@ -392,20 +388,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/destinations', destinationController.createDestination);
 
   // Trip Routes
-  app.get('/api/trips',  tripController.getAllTrips);
-  app.post('/api/trips',  tripController.createTrip);
-  app.get('/api/trips/:id',  tripController.getTripById);
-  app.patch('/api/trips/:id',  tripController.updateTrip);
-  app.delete('/api/trips/:id',  tripController.deleteTrip);
+  app.get('/api/trips', authenticate, tripController.getAllTrips);
+  app.post('/api/trips', authenticate, tripController.createTrip);
+  app.get('/api/trips/:id', authenticate, tripController.getTripById);
+  app.patch('/api/trips/:id', authenticate, tripController.updateTrip);
+  app.delete('/api/trips/:id', authenticate, tripController.deleteTrip);
 
   // Transportation Routes
-  app.get('/api/transportation-bookings',  transportationBookingController.getAllBookings);
-  app.post('/api/transportation-bookings',  transportationBookingController.createBooking);
-  app.get('/api/transportation-bookings/:id',  transportationBookingController.getBookingById);
-  app.patch('/api/transportation-bookings/:id',  transportationBookingController.updateBooking);
+  app.get('/api/transportation-bookings', authenticate, transportationBookingController.getAllBookings);
+  app.post('/api/transportation-bookings', authenticate, transportationBookingController.createBooking);
+  app.get('/api/transportation-bookings/:id', authenticate, transportationBookingController.getBookingById);
+  app.patch('/api/transportation-bookings/:id', authenticate, transportationBookingController.updateBooking);
 
   // AI Itinerary Route
-  app.post('/api/generate-itinerary',  itineraryController.generateItinerary);
+  app.post('/api/generate-itinerary', authenticate, itineraryController.generateItinerary);
+
+  // NEW: Itinerary Day Routes
+ app.get('/api/itinerary-days/trip/:tripId', authenticate, itineraryController.getItineraryDaysByTrip);
+  app.delete('/api/itinerary-days/trip/:tripId', authenticate, itineraryController.deleteItineraryDaysByTrip);
+  app.patch('/api/itinerary-days/trip/:tripId/activities', authenticate, itineraryController.updateItineraryDayActivities);
+  app.post('/api/itinerary-days/trip/:tripId/day', authenticate, itineraryController.addDayToItinerary);
+  app.delete('/api/itinerary-days/trip/:tripId/day/:dayNumber', authenticate, itineraryController.removeDayFromItinerary);
+  
+  // NEW: Save detailed itinerary endpoint
+  app.post('/api/save-detailed-itinerary', authenticate, itineraryController.saveDetailedItinerary);
 
   return createServer(app);
 }

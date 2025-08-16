@@ -4,6 +4,9 @@ import { registerRoutes } from "./routes";
 import { Express } from "express-serve-static-core";
 import flightRoutes from "./routes/flightRoutes"; // Adjust the path if necessary
 import { authenticate } from "./middleware/authenticate";
+// const itineraryDaysRoutes = require('./routes/itineraryRoutes');
+// const itineraryRoutes = require("./routes/itineraryRoutes"); // Adjust the path if necessary
+import itineraryRoutes from "./routes/itineraryRoutes"; // Adjust the path if necessary
 
 const { baseDbConnection } = require("./dbConnection");
 
@@ -12,6 +15,7 @@ const app = express();
 // Middleware to parse JSON and URL-encoded payloads
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+// app.use('/api/itinerary-days', itineraryRoutes);
 
 // Request logger middleware for /api routes
 app.use((req, res, next) => {

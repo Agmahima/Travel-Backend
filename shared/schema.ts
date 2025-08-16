@@ -1,119 +1,10 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+// shared/schema.ts - MongoDB focused with Zod validation
 import { z } from "zod";
-
-// Users schema
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  email: text("email").notNull().unique(),
-  fullName: text("full_name").notNull(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  email: true,
-  fullName: true,
-});
-
-// Destinations schema
-export const destinations = pgTable("destinations", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  country: text("country").notNull(),
-  description: text("description").notNull(),
-  imageUrl: text("image_url").notNull(),
-  rating: text("rating"),
-  pricePerPerson: integer("price_per_person"),
-  badge: text("badge"),
-});
-
-export const insertDestinationSchema = createInsertSchema(destinations).pick({
-  name: true,
-  country: true,
-  description: true,
-  imageUrl: true,
-  rating: true,
-  pricePerPerson: true,
-  badge: true,
-});
-
-// Trips schema
-export const trips = pgTable("trips", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  destination: text("destination").notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  adults: integer("adults").notNull(),
-  children: integer("children").default(0),
-  itinerary: jsonb("itinerary"),
-  preferences: jsonb("preferences"),
-  status: text("status").default("planned"),
-});
-
-export const insertTripSchema = z.object({
-  userId: z.string().length(24, "Invalid userId"),
-  destinations: z.array(
-    z.object({
-      location: z.string(),
-      daysToStay: z.number()
-    })
-  ).optional(),
-  destination: z.string().optional(), // backward compatibility for single-city trip
-  startDate: z.coerce.date(), // accepts ISO string and converts to Date
-  endDate: z.coerce.date(),
-  adults: z.number(),
-  children: z.number().optional().default(0),
-  preferences: z.record(z.any()).optional(),
-  itinerary: z.any().optional(), // You can define stricter structure if needed
-  status: z.string().optional().default("planned")
-});
-
-// Transportation bookings schema
-export const transportationBookings = pgTable("transportation_bookings", {
-  id: serial("id").primaryKey(),
-  tripId: integer("trip_id").notNull(),
-  userId: integer("user_id").notNull(),
-  driverName: text("driver_name"),
-  vehicleType: text("vehicle_type").notNull(),
-  serviceLevel: text("service_level").notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  status: text("status").default("booked"),
-  price: integer("price").notNull(),
-});
-
-export const insertTransportationBookingSchema = createInsertSchema(transportationBookings).pick({
-  tripId: true,
-  userId: true,
-  driverName: true,
-  vehicleType: true,
-  serviceLevel: true,
-  startDate: true,
-  endDate: true,
-  price: true,
-});
-
-// Define types from schemas
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-export type InsertDestination = z.infer<typeof insertDestinationSchema>;
-export type Destination = typeof destinations.$inferSelect;
-
-export type InsertTrip = z.infer<typeof insertTripSchema>;
-export type Trip = typeof trips.$inferSelect;
-
-export type InsertTransportationBooking = z.infer<typeof insertTransportationBookingSchema>;
-export type TransportationBooking = typeof transportationBookings.$inferSelect;
 
 // Define destination stop schema
 export const destinationStopSchema = z.object({
-  location: z.string(),
-  daysToStay: z.number()
+  location: z.string().min(1, "Location is required"),
+  daysToStay: z.number().min(1, "Days to stay must be at least 1")
 });
 
 // Define transportation option schema
@@ -124,13 +15,47 @@ export const transportationOptionSchema = z.object({
   booked: z.boolean().default(false)
 });
 
-// AI Itinerary request schema
+// Schema for validating individual ACTIVITY (what AI returns)
+export const activitySchema = z.object({
+  title: z.string().default(''),
+  description: z.string().default(''),
+  time: z.string().default(''),
+  duration: z.string().default(''),
+  location: z.string().default(''),
+  cost: z.string().default(''),
+  category: z.enum(['morning', 'lunch', 'afternoon', 'evening', 'other']).default('other')
+});
+
+// Schema for validating MEALS (what AI returns)
+export const mealsSchema = z.object({
+  breakfast: z.string().default(''),
+  lunch: z.string().default(''),
+  dinner: z.string().default('')
+});
+
+// Schema for validating individual DAY (what AI returns)
+export const itineraryDaySchema = z.object({
+  day: z.number().min(1, "Day number must be at least 1"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+  location: z.string().default(''),
+  activities: z.array(activitySchema).default([]),
+  accommodation: z.string().default(''),
+  transportation: z.string().default(''),
+  meals: mealsSchema.default({}),
+  estimatedCost: z.number().default(0)
+});
+
+// Schema for validating the complete ITINERARY response (what AI returns)
+export const aiItineraryResponseSchema = z.object({
+  destination: z.string().min(1, "Destination is required"),
+  days: z.array(itineraryDaySchema).min(1, "At least one day is required")
+});
+
+// AI Itinerary request schema WITHOUT tripId (for regular generate endpoint)
 export const aiItineraryRequestSchema = z.object({
-  // For backwards compatibility
-  destination: z.string(),
-  startDate: z.string(),
-  endDate: z.string(),
-  // Multi-destination support
+  destination: z.string().min(1, "Destination is required"),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Start date must be in YYYY-MM-DD format"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "End date must be in YYYY-MM-DD format"),
   destinations: z.array(destinationStopSchema).optional(),
   transportationOptions: z.array(transportationOptionSchema).optional(),
   preferences: z.object({
@@ -142,6 +67,89 @@ export const aiItineraryRequestSchema = z.object({
   }).optional(),
 });
 
+// AI Itinerary request schema WITH tripId (for generate-and-save endpoint)
+export const aiItineraryWithTripRequestSchema = aiItineraryRequestSchema.extend({
+  tripId: z.string().min(1, "Trip ID is required"),
+});
+
+// User schema for MongoDB
+export const insertUserSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Invalid email format"),
+  fullName: z.string().min(1, "Full name is required"),
+});
+
+// Destination schema for MongoDB
+export const insertDestinationSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  country: z.string().min(1, "Country is required"),
+  description: z.string().min(1, "Description is required"),
+  imageUrl: z.string().url("Invalid image URL"),
+  rating: z.string().optional(),
+  pricePerPerson: z.number().optional(),
+  badge: z.string().optional(),
+});
+
+// Trip schema for MongoDB (using MongoDB ObjectId strings)
+export const insertTripSchema = z.object({
+  userId: z.string().length(24, "Invalid userId - must be MongoDB ObjectId"),
+  destinations: z.array(destinationStopSchema).optional(),
+  destination: z.string().optional(), // backward compatibility
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  adults: z.number().min(1, "At least 1 adult required"),
+  children: z.number().optional().default(0),
+  preferences: z.record(z.any()).optional(),
+  itinerary: z.any().optional(),
+  status: z.string().optional().default("planned")
+});
+
+// Transportation booking schema for MongoDB
+export const insertTransportationBookingSchema = z.object({
+  tripId: z.string().length(24, "Invalid tripId - must be MongoDB ObjectId"),
+  userId: z.string().length(24, "Invalid userId - must be MongoDB ObjectId"),
+  driverName: z.string().optional(),
+  vehicleType: z.string().min(1, "Vehicle type is required"),
+  serviceLevel: z.string().min(1, "Service level is required"),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  price: z.number().min(0, "Price cannot be negative"),
+});
+
+// Schema for inserting into MongoDB ItineraryDay collection
+export const insertItineraryDaySchema = z.object({
+  itineraryId: z.string().length(24, "Invalid itineraryId - must be MongoDB ObjectId"), // Note: using itineraryId like your model
+  dayNumber: z.number().min(1, "Day number must be at least 1"),
+  date: z.coerce.date(),
+  location: z.string().default(''),
+  activities: z.array(activitySchema).default([]),
+  accommodation: z.string().default(''),
+  transportation: z.string().default(''),
+  meals: mealsSchema.default({}),
+  estimatedCost: z.number().default(0)
+});
+
+// Schema for updating itinerary day activities
+export const updateItineraryDayActivitiesSchema = z.object({
+  activities: z.array(activitySchema)
+});
+
+// Define types from schemas
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertDestination = z.infer<typeof insertDestinationSchema>;
+export type InsertTrip = z.infer<typeof insertTripSchema>;
+export type InsertTransportationBooking = z.infer<typeof insertTransportationBookingSchema>;
+export type InsertItineraryDay = z.infer<typeof insertItineraryDaySchema>;
+
+// AI-related types
 export type AIItineraryRequest = z.infer<typeof aiItineraryRequestSchema>;
+export type AIItineraryWithTripRequest = z.infer<typeof aiItineraryWithTripRequestSchema>;
+export type AIItineraryResponse = z.infer<typeof aiItineraryResponseSchema>;
+export type ItineraryDayData = z.infer<typeof itineraryDaySchema>;
+export type Activity = z.infer<typeof activitySchema>;
+export type Meals = z.infer<typeof mealsSchema>;
+
+// Other types
 export type DestinationStop = z.infer<typeof destinationStopSchema>;
 export type TransportationOption = z.infer<typeof transportationOptionSchema>;
