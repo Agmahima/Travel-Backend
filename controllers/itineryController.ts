@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY || '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',
+  apiKey: process.env.OPENROUTER_API_KEY || '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',
   defaultHeaders: {
     'HTTP-Referer': 'https://your-site-url.com',
     'X-Title': 'TravelPlannerAI',
@@ -94,7 +94,7 @@ Respond with JSON only (inside \`\`\`json block), like this:
 
       console.log('=== CALLING OPENAI API ===');
       const completion = await openai.chat.completions.create({
-        model: "deepseek/deepseek-chat-v3-0324:free",
+        model: "deepseek/deepseek-chat-v3.1:free",
         messages: [
           { role: "system", content: "You are an expert travel planner." },
           { role: "user", content: prompt }
