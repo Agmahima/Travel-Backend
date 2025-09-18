@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY || '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',
+  apiKey: process.env.OPENROUTER_API_KEY || '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',
   defaultHeaders: {
     'HTTP-Referer': 'https://your-site-url.com',
     'X-Title': 'TravelPlannerAI',
