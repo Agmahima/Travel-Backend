@@ -9,7 +9,8 @@ import { tripController } from "./controllers/tripController";
 import { transportationBookingController } from "./controllers/transportationBookingController";
 import { itineraryController } from "./controllers/itineryController";
 import { authenticate } from "./middleware/authenticate";
-import { HotelController } from "./controllers/hotelController";
+// import {HotelController} from "./controllers/hotelController";
+import HotelController from "./controllers/hotelController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const SessionStore = MemoryStore(session);
@@ -108,34 +109,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     itineraryController.saveDetailedItinerary
   );
 
-  app.get("/hotels-by-city/:cityCode", HotelController.getHotelsByCity);
+  // app.get("/hotels-by-city/:cityCode", HotelController.getHotelsByCity);
 
-  // GET: Hotel Search with Availability and Pricing
-  app.get("/hotel-search", HotelController.searchHotels);
+  // // GET: Hotel Search with Availability and Pricing
+  // app.get("/hotel-search", HotelController.searchHotels);
 
-  // GET: Hotel Offers by Hotel ID
-  app.get("/hotel-offers/:hotelId", HotelController.getHotelOffers);
+  // // GET: Hotel Offers by Hotel ID
+  // app.get("/hotel-offers/:hotelId", HotelController.getHotelOffers);
 
-  // POST: Hotel Offer Confirmation (pricing)
-  app.post("/hotel-confirmation", HotelController.confirmHotelOffer);
+  // // POST: Hotel Offer Confirmation (pricing)
+  // app.post("/hotel-confirmation", HotelController.confirmHotelOffer);
 
-  // POST: Hotel Booking
-  app.post("/hotel-booking", HotelController.createHotelBooking);
+  // // POST: Hotel Booking
+  // app.post("/hotel-booking", HotelController.createHotelBooking);
 
-  // GET: Retrieve hotel booking by ID
-  app.get("/hotel-booking/:bookingId", HotelController.getHotelBooking);
+  // // GET: Retrieve hotel booking by ID
+  // app.get("/hotel-booking/:bookingId", HotelController.getHotelBooking);
 
-  // DELETE: Cancel hotel booking
-  app.delete("/hotel-booking/:bookingId", HotelController.cancelHotelBooking);
+  // // DELETE: Cancel hotel booking
+  // app.delete("/hotel-booking/:bookingId", HotelController.cancelHotelBooking);
 
-  // GET: Hotel amenities and facilities
-  app.get("/hotel-amenities", HotelController.getHotelAmenities);
+  // // GET: Hotel amenities and facilities
+  // app.get("/hotel-amenities", HotelController.getHotelAmenities);
 
-  // GET: All hotel bookings for a main booking
-  app.get(
-    "/bookings/:bookingId/hotels",
-    HotelController.getHotelBookingsByMainBookingId
-  );
+  // // GET: All hotel bookings for a main booking
+  // app.get(
+  //   "/bookings/:bookingId/hotels",
+  //   HotelController.getHotelBookingsByMainBookingId
+  // );
+  // 1. Search destinations
+// GET /api/hotels/search-destinations?query=Mumbai
+app.get('/search-destinations', HotelController.searchDestinations);
+
+// 2. Search hotels in a destination
+// GET /api/hotels/search?dest_id=-2092174&checkin_date=2025-09-22&checkout_date=2025-09-24&adults=1&room_qty=1
+app.get('/search', HotelController.searchHotels);
+
+// 3. Get detailed hotel information
+// GET /api/hotels/74717/details?arrival_date=2025-09-22&departure_date=2025-09-24&adults=1
+app.get('/:hotel_id/details', HotelController.getHotelDetails);
+
+// 4. Create hotel booking
+// POST /api/hotels/bookings
+app.post('/bookings', HotelController.createHotelBooking);
+
+// 5. Get hotel booking by reference
+// GET /api/hotels/bookings/HB-123456789
+app.get('/bookings/:bookingRef', HotelController.getHotelBooking);
+
+// 6. Update hotel booking status
+// PUT /api/hotels/bookings/HB-123456789/status
+app.put('/bookings/:bookingRef/status', HotelController.updateBookingStatus);
+
+// 7. Get user's hotel bookings
+// GET /api/hotels/users/user123/bookings?status=confirmed&page=1&limit=10
+app.get('/users/:userId/bookings', HotelController.getUserHotelBookings);
+
 
   return createServer(app);
 }
