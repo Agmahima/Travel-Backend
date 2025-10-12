@@ -206,7 +206,7 @@ class HotelController {
   private readonly baseUrl: string;
 
   constructor() {
-    this.rapidApiKey = process.env.RAPIDAPI_KEY || "" ;
+    this.rapidApiKey = process.env.RAPIDAPI_KEY || '330f10a653mshaa89a2a5193567ep1045b6jsn7f7dc56171b4';
     this.baseUrl = 'booking-com15.p.rapidapi.com';
   }
 

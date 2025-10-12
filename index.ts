@@ -2,20 +2,40 @@ require('dotenv').config();
 import express, { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { Express } from "express-serve-static-core";
-import flightRoutes from "./routes/flightRoutes"; // Adjust the path if necessary
+import flightRoutes from "./routes/flightRoutes"; 
 import { authenticate } from "./middleware/authenticate";
-// const itineraryDaysRoutes = require('./routes/itineraryRoutes');
-// const itineraryRoutes = require("./routes/itineraryRoutes"); // Adjust the path if necessary
-import itineraryRoutes from "./routes/itineraryRoutes"; // Adjust the path if necessary
-
+import { searchResultRoutes } from "./routes/searchResultRoutes";
+import session from "express-session";
+import cors from "cors";
 const { baseDbConnection } = require("./dbConnection");
 
 const app = express();
 
-// Middleware to parse JSON and URL-encoded payloads
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// app.use('/api/itinerary-days', itineraryRoutes);
+
+app.use(
+  cors({
+    origin: "http://localhost:3000", // your frontend domain
+    credentials: true, // allow cookies
+  })
+);
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "supersecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // true only in HTTPS
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
+  })
+);
 
 // Request logger middleware for /api routes
 app.use((req, res, next) => {
@@ -45,21 +65,17 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      // Uncomment this if you want to log to console
-      // console.log(logLine);
     }
   });
 
   next();
 });
 
-// Connect to MongoDB
 baseDbConnection.on('connected', () => console.log('Connected to dev-base database'));
 baseDbConnection.on('error', (err: any) =>
   console.error('Error connecting to dev-base database:', err)
 );
 
-// Initialize Amadeus client
 var amadeus = new (require("amadeus"))({
   clientId: process.env.AMADEUS_CLIENT_ID || "missing-client-id",
   clientSecret: process.env.AMADEUS_CLIENT_SECRET || "missing-client-secret"
@@ -78,6 +94,7 @@ function serveStatic(app: Express) {
 
     // Attach flight routes BEFORE the error handler
     app.use('/api/flights', flightRoutes);
+    app.use('/api/search-results', searchResultRoutes);
 
     // Global error handler (should always come last)
     app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
