@@ -151,19 +151,19 @@ app.get('/:hotel_id/details', HotelController.getHotelDetails);
 
 // 4. Create hotel booking
 // POST /api/hotels/bookings
-app.post('/bookings', HotelController.createHotelBooking);
+app.post('/api/hotels/bookings', HotelController.createHotelBooking);
 
 // 5. Get hotel booking by reference
 // GET /api/hotels/bookings/HB-123456789
-app.get('/bookings/:bookingRef', HotelController.getHotelBooking);
+app.get('/api/hotels/bookings/:bookingRef', HotelController.getHotelBooking);
 
 // 6. Update hotel booking status
 // PUT /api/hotels/bookings/HB-123456789/status
-app.put('/bookings/:bookingRef/status', HotelController.updateBookingStatus);
+app.put('/api/hotels/bookings/:bookingRef/status', HotelController.updateBookingStatus);
 
 // 7. Get user's hotel bookings
 // GET /api/hotels/users/user123/bookings?status=confirmed&page=1&limit=10
-app.get('/users/:userId/bookings', HotelController.getUserHotelBookings);
+app.get('/api/hotels/users/:userId/bookings', HotelController.getUserHotelBookings);
 
 
   return createServer(app);

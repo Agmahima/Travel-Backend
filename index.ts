@@ -7,6 +7,7 @@ import { authenticate } from "./middleware/authenticate";
 import { searchResultRoutes } from "./routes/searchResultRoutes";
 import session from "express-session";
 import cors from "cors";
+import { bookingRoutes } from "./routes/bookingRoutes";
 const { baseDbConnection } = require("./dbConnection");
 
 const app = express();
@@ -95,6 +96,7 @@ function serveStatic(app: Express) {
     // Attach flight routes BEFORE the error handler
     app.use('/api/flights', flightRoutes);
     app.use('/api/search-results', searchResultRoutes);
+    app.use('/api/bookings', bookingRoutes);
 
     // Global error handler (should always come last)
     app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {

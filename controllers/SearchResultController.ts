@@ -56,9 +56,9 @@ export class SearchResultController {
   // Save hotel search results
   async saveHotelSearchResults(req: Request, res: Response): Promise<void> {
     try {
+      const userId= req.session.userId;
       const {
         tripId,
-        userId,
         searchParams,
         hotels
       } = req.body;
@@ -71,12 +71,15 @@ export class SearchResultController {
             userId: new Types.ObjectId(userId),
             tripId: new Types.ObjectId(tripId),
             searchParams,
-            hotelData: hotel,
+
+            // hotelData: hotel,
             searchSessionId
           });
           return await searchResult.save();
         })
       );
+      console.log(`Saved hotel search for user ${userId}, trip ${tripId}, found ${searchResults.length} results`);
+
 
       res.status(201).json({
         success: true,

@@ -5,6 +5,7 @@ import TransportationBooking from '../models/TransportationBooking'; // Adjust t
 import { ZodError } from 'zod';
 
 export const transportationBookingController = {
+  
   /**
    * Get all bookings for current user
    */
@@ -28,10 +29,15 @@ export const transportationBookingController = {
    */
   createBooking: async (req: Request, res: Response): Promise<void> => {
     try {
+      const userId = (req as any).user?.userId;
+      if (!userId) {
+  res.status(401).json({ message: "Unauthorized" });
+  return;
+}
       const validatedData = insertTransportationBookingSchema.parse({
-        ...req.body,
-        userId: req.session.userId
-      });
+  ...req.body,
+  userId
+});
       
       const booking = await TransportationBooking.create(validatedData);
       res.status(201).json(booking);

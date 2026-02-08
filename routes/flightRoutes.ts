@@ -1,7 +1,14 @@
 
+import { date } from "drizzle-orm/mysql-core";
 import { Router, Request, Response } from "express";
+import FlightBooking from "../models/FlightBooking";
+import Booking from "../models/Bookings";
+import mongoose from "mongoose";
 const router = Router();
 const Amadeus = require('amadeus');
+import { getOrCreateParentBooking, linkServiceToBooking, generateBookingReference } from '../utils/bookingHelpers';
+import { authenticate, AuthenticatedRequest } from "../middleware/authenticate";
+
 
 const amadeus = new Amadeus({
   clientId: process.env.AMADEUS_CLIENT_ID || "missing-client-id",
@@ -622,114 +629,369 @@ router.post("/multi-city-booking", async (req: Request, res: Response) => {
 });
 
 // POST: Flight Booking (enhanced for backward compatibility)
-router.post("/flight-booking", async (req: Request, res: Response) => {
-  const { flight, flights, name, travelers } = req.body;
-  
-  // Check if this is a multi-city booking request
-  if (flights && Array.isArray(flights)) {
-    // Use the travelers data if available, otherwise create from name
-    const bookingTravelers = travelers || (name ? [{
-      firstName: name.first,
-      lastName: name.last,
-      email: "default@example.com",
-      phone: "1234567890",
-      dateOfBirth: "1990-01-01",
-      gender: "MALE",
-      passportNumber: "00000000",
-      passportExpiryDate: "2030-01-01",
-      passportCountry: "US",
-      nationality: "US"
-    }] : []);
+// router.post("/flight-booking", async (req: Request, res: Response) => {
+//   const { flight, flights, name, travelers, tripId } = req.body;
+//   const {bookingId, userId} = req.body;
+//   console.log("Flight Booking Parameters:", { 
+//     singleFlight: !!flight,
+//     multiCityFlights: flights?.length || 0,
+//     name,
+//     travelers: travelers?.length || 0,
+//     userId,
+//     tripId
+//   });
 
-    // Redirect to multi-city booking
-    req.body.travelers = bookingTravelers;
-    return router.stack.find(layer => 
-      layer.route?.path === '/multi-city-booking' && 
-      layer.route?.stack?.some((m: any) => m.method === 'post')
-    )?.handle(req, res, () => {}) || res.status(500).json({
-      success: false,
-      error: "Multi-city booking handler not found"
-    });
-  }
+//   // Check if this is a multi-city booking request
+//   if (flights && Array.isArray(flights)) {
+//     // Use the travelers data if available, otherwise create from name
+//     const bookingTravelers = travelers || (name ? [{
+//       firstName: name.first,
+//       lastName: name.last,
+//       email: "default@example.com",
+//       phone: "1234567890",
+//       dateOfBirth: "1990-01-01",
+//       gender: "MALE",
+//       passportNumber: "00000000",
+//       passportExpiryDate: "2030-01-01",
+//       passportCountry: "US",
+//       nationality: "US"
+//     }] : []);
 
-  // Original single flight booking logic
-  console.log("Single Flight Booking Parameters:", { flight, name });
+//     // Redirect to multi-city booking
+//     req.body.travelers = bookingTravelers;
+//     return router.stack.find(layer => 
+//       layer.route?.path === '/multi-city-booking' && 
+//       layer.route?.stack?.some((m: any) => m.method === 'post')
+//     )?.handle(req, res, () => {}) || res.status(500).json({
+//       success: false,
+//       error: "Multi-city booking handler not found"
+//     });
+//   }
+
+//   // Original single flight booking logic
+//   console.log("Single Flight Booking Parameters:", { flight, name });
+
+//   try {
+//     if (!flight) {
+//       return res.status(400).json({
+//         success: false,
+//         error: "flight parameter is required"
+//       });
+//     }
+
+//     if (!name || !name.first || !name.last) {
+//       return res.status(400).json({
+//         success: false,
+//         error: "name.first and name.last are required"
+//       });
+//     }
+
+//     const bookingData = {
+//       data: {
+//         type: "flight-order",
+//         flightOffers: [flight],
+//         travelers: [
+//           {
+//             id: "1",
+//             dateOfBirth: "1982-01-16",
+//             name: {
+//               firstName: name.first,
+//               lastName: name.last,
+//             },
+//             gender: "MALE",
+//             contact: {
+//               emailAddress: "jorge.gonzales833@telefonica.es",
+//               phones: [
+//                 {
+//                   deviceType: "MOBILE",
+//                   countryCallingCode: "34",
+//                   number: "480080076",
+//                 },
+//               ],
+//             },
+//             documents: [
+//               {
+//                 documentType: "PASSPORT",
+//                 birthPlace: "Madrid",
+//                 issuanceLocation: "Madrid",
+//                 issuanceDate: "2015-04-14",
+//                 number: "00000000",
+//                 expiryDate: "2025-04-14",
+//                 issuanceCountry: "ES",
+//                 validityCountry: "ES",
+//                 nationality: "ES",
+//                 holder: true,
+//               },
+//             ],
+//           },
+//         ],
+//       },
+//     };
+
+//     const response = await amadeus.booking.flightOrders.post(
+//       JSON.stringify(bookingData)
+//     );
+    
+//     const flightBookingRef = response.result.data?.id;
+//     console.log("Flight booking reference:", flightBookingRef);
+
+//       const segment = flight.itineraries[0].segments[0];
+//       const lastSegment = flight.itineraries[0].segments[flight.itineraries[0].segments.length - 1];
+
+//       const flightDetails = {
+//         airline:segment.carrierCode,
+//         flightNumber: segment.number,
+//         departure: {
+//           airport: segment.departure.iataCode,
+//           city: segment.departure.at,
+//           dateTime: segment.departure.at,
+//           terminal:segment.departure.terminal || ''
+//         },
+//         arrival:{
+//           airport: lastSegment.arrival.iataCode,
+//           city: lastSegment.arrival.at,
+//           dateTime: lastSegment.arrival.at,
+//           terminal:lastSegment.arrival.terminal || ''
+//         },
+//         aircraft: segment.aircraft.code || '',
+//         duration: flight.itineraries[0].duration || '',
+//         class: flight.travelerPricings?.[0]?.fareDetailsBySegment?.[0]?.cabin?.toLowerCase() ||
+//           "economy",
+//       };
+//       const newFlightBooking = await FlightBooking.create({
+//         bookingId: flightBookingRef,
+//         flightBookingRef: flightBookingRef,
+//         flightDetails: flightDetails,
+//         pricing: {
+//           basePrice:flight.price.base || '',
+//            taxes: flight.price.taxes || 0,
+//           fees: flight.price.fees || 0,
+//           totalPrice: flight.price.total,
+//           currency: flight.price.currency || "USD",
+//         },
+//         status: "Draft"
+        
+//       });
+
+//       let parentBooking = null;
+
+//       if(bookingId) {
+//         parentBooking = await Booking.findByIdAndUpdate(
+//           bookingId,
+//           {$set: {"services.flight": newFlightBooking._id}},
+//           {new: true}
+
+//         )
+//       }
+//       if(!parentBooking) {
+//         parentBooking = await Booking.create({
+//           userId: userId || null,
+//           bookingRef : `B-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+//           services : {flight: newFlightBooking._id},
+//           status: "Draft",
+
+//         });
+//         console.log("Created new parent booking:", parentBooking._id);
+//       }
+//       console.log("Flight booking saved with ID:", newFlightBooking._id);
+    
+//      res.status(201).json({
+//       success: true,
+//       message: "Flight booking created successfully",
+//       data: {
+//         flightBookingId: newFlightBooking._id,
+//         flightBookingRef,
+//         parentBookingId: parentBooking._id,
+//         status: newFlightBooking.status,
+//       },
+//     });
+//   } catch (err: any) {
+//     console.error("Single flight booking error:", err);
+//     res.status(500).json({ 
+//       success: false,
+//       error: "Failed to book flight",
+//       details: err.response?.body || err.message || err
+//     });
+//   }
+// });
+
+router.post("/flight-booking",authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { flight, name, travelers,totalTravelers,totalPrice} = req.body;
+  //  const userId= req.session.userId;
+  const userId = req.userId;
+  const { tripId } = req.body;
+
+  console.log("Flight Draft Creation:", { userId, tripId , totalTravelers, totalPrice});
 
   try {
     if (!flight) {
-      return res.status(400).json({
-        success: false,
-        error: "flight parameter is required"
-      });
+      res.status(400).json({ success: false, error: "flight parameter is required" });
+      return;
     }
 
-    if (!name || !name.first || !name.last) {
-      return res.status(400).json({
+     const currency = String(flight.price?.currency || 'USD');
+     const finalTotalPrice = Number(totalPrice || flight.price?.total || 0);
+    const pricePerPerson = Number(flight.price?.total || 0);
+    
+    // ✅ Ensure totalPrice is a number
+    // const totalPrice = Number(flight.price?.total || 0);
+
+     if (!tripId || !userId ) {
+      res.status(400).json({
         success: false,
-        error: "name.first and name.last are required"
+        message: 'Missing required booking information (tripId, userId)'
       });
+      return;
     }
 
-    const bookingData = {
-      data: {
-        type: "flight-order",
-        flightOffers: [flight],
-        travelers: [
-          {
-            id: "1",
-            dateOfBirth: "1982-01-16",
-            name: {
-              firstName: name.first,
-              lastName: name.last,
-            },
-            gender: "MALE",
-            contact: {
-              emailAddress: "jorge.gonzales833@telefonica.es",
-              phones: [
-                {
-                  deviceType: "MOBILE",
-                  countryCallingCode: "34",
-                  number: "480080076",
-                },
-              ],
-            },
-            documents: [
-              {
-                documentType: "PASSPORT",
-                birthPlace: "Madrid",
-                issuanceLocation: "Madrid",
-                issuanceDate: "2015-04-14",
-                number: "00000000",
-                expiryDate: "2025-04-14",
-                issuanceCountry: "ES",
-                validityCountry: "ES",
-                nationality: "ES",
-                holder: true,
-              },
-            ],
-          },
-        ],
-      },
+     const parentBooking = await getOrCreateParentBooking(
+     userId?.toString(),
+      tripId,
+      currency
+    );
+
+    console.log("✅ Parent booking:", parentBooking._id);
+
+    // Step 3: Parse flight details
+    const segment = flight.itineraries[0].segments[0];
+    const lastSegment = flight.itineraries[0].segments[flight.itineraries[0].segments.length - 1];
+
+    const parseDuration = (duration: string): number => {
+      const match = duration.match(/PT(\d+H)?(\d+M)?/);
+      if (!match) return 0;
+      const hours = match[1] ? parseInt(match[1].replace("H", "")) : 0;
+      const minutes = match[2] ? parseInt(match[2].replace("M", "")) : 0;
+      return hours * 60 + minutes;
     };
 
-    const response = await amadeus.booking.flightOrders.post(
-      JSON.stringify(bookingData)
+    // ✅ Process travelers properly - ensure travelerId is always present
+    let passengersList: any[] = [];
+
+    if (travelers && Array.isArray(travelers) && travelers.length > 0) {
+      // Use provided travelers data
+      passengersList = travelers.map((t: any, index: number) => {
+        const travelerId = t.travelerId || t._id || t.id || userId;
+        
+        console.log(`Processing traveler ${index}:`, { 
+          received: t, 
+          finalTravelerId: travelerId 
+        });
+
+        return {
+          travelerId: travelerId.toString(), // Ensure it's a string
+          type: t.type || 'adult',
+          name: t.name || `${name?.first || 'Traveler'} ${name?.last || index + 1}`,
+          seatPreference: t.seatPreference || 'any',
+          specialRequests: t.specialRequests || ''
+        };
+      });
+    } else {
+      // Create default travelers using userId
+      const count = totalTravelers || 1;
+      passengersList = Array.from({ length: count }, (_, i) => ({
+        travelerId: userId.toString(),
+        type: 'adult',
+        name: `${name?.first || 'Traveler'} ${name?.last || i + 1}`,
+        seatPreference: 'any',
+        specialRequests: ''
+      }));
+    }
+
+    console.log("👥 Final passengers list:", passengersList);
+
+    // Validate that all passengers have travelerId
+    const invalidPassengers = passengersList.filter(p => !p.travelerId);
+    if (invalidPassengers.length > 0) {
+      console.error("❌ Invalid passengers found:", invalidPassengers);
+      res.status(400).json({
+        success: false,
+        error: "All passengers must have a valid travelerId"
+      });
+      return;
+    }
+
+
+
+    // Step 4: Create draft FlightBooking
+    const flightBooking = await FlightBooking.create({
+      bookingId: parentBooking._id,
+      flightBookingRef: `FL-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      flightdetails: {
+        airline: segment.carrierCode,
+        flightNumber: segment.number,
+        departure: {
+          airport: segment.departure.iataCode,
+          dateTime: new Date(segment.departure.at),
+          terminal: segment.departure.terminal || ""
+        },
+        arrival: {
+          airport: lastSegment.arrival.iataCode,
+          dateTime: new Date(lastSegment.arrival.at),
+          terminal: lastSegment.arrival.terminal || ""
+        },
+        aircraft: segment.aircraft?.code || "",
+        duration: parseDuration(flight.itineraries[0].duration),
+        class: flight.travelerPricings?.[0]?.fareDetailsBySegment?.[0]?.cabin?.toLowerCase() || "economy"
+      },
+      passengers: passengersList,
+      pricing: {
+        basePrice: pricePerPerson, // ✅ Price per person
+        taxes: parseFloat(flight.price?.taxes || 0) * (totalTravelers || 1),
+        fees: Array.isArray(flight.price?.fees)
+          ? flight.price.fees.reduce(
+              (sum: number, f: { amount?: string; type?: string }) =>
+                sum + parseFloat(f.amount || "0"),
+              0
+            ) * (totalTravelers || 1)
+          : parseFloat(flight.price?.fees || "0") * (totalTravelers || 1),
+        totalPrice: finalTotalPrice, // ✅ Total for all travelers
+        currency: flight.price?.currency || "USD",
+        pricePerPerson, // ✅ Store per-person price for reference
+        numberOfTravelers: totalTravelers || 1
+      },
+      status: "draft"
+    });
+
+     await linkServiceToBooking(
+      parentBooking._id,
+      'flights',
+      flightBooking._id,
+      totalPrice
     );
-    
-    res.json({
+
+    // Step 5: Link to parent booking
+    // parentBooking.services.flights.push(flightBooking._id);
+    // parentBooking.pricing.breakdown.flights += parseFloat(flight.price.total);
+    // parentBooking.pricing.totalAmount += parseFloat(flight.price.total);
+    // await parentBooking.save();
+     parentBooking.services.flights.push(flightBooking._id);
+    parentBooking.pricing.breakdown.flights += finalTotalPrice; // ✅ Add total price
+    parentBooking.pricing.totalAmount += finalTotalPrice;
+    await parentBooking.save();
+
+    console.log("✅ Draft flight booking saved and linked");
+
+    res.status(201).json({
       success: true,
-      data: response.result,
-      bookingId: response.result.data?.id
+      message: "Draft flight booking created successfully",
+      data: {
+        flightBookingId: flightBooking._id,
+        parentBookingId: parentBooking._id,
+        pricePerPerson,
+        numberOfTravelers: totalTravelers || 1,
+        totalPrice: finalTotalPrice,
+        currency: flight.price?.currency
+      }
     });
   } catch (err: any) {
-    console.error("Single flight booking error:", err);
-    res.status(500).json({ 
+    console.error("❌ Draft flight booking error:", err);
+    res.status(500).json({
       success: false,
-      error: "Failed to book flight",
-      details: err.response?.body || err.message || err
+      error: err.message || "Failed to create draft flight booking"
     });
   }
 });
+
 
 // GET: Retrieve flight booking by ID
 router.get("/flight-booking/:bookingId", async (req: Request, res: Response) => {

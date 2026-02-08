@@ -8,21 +8,70 @@ export const tripController = {
   /**
    * Get all trips for current user
    */
-  getAllTrips: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const userId = req.query.userId || req.session.userId;
-      console.log("User ID from session:", userId); // Log the userId for debugging
-      if (!userId) {
-        res.status(400).json({ message: "User ID is missing in session" });
-        return;
-      }
+  // getAllTrips: async (req: Request, res: Response): Promise<void> => {
+  //   try {
+  //     const userId = req.query.userId || req.session.userId;
+  //     console.log("User ID from session:", userId); // Log the userId for debugging
+  //     if (!userId) {
+  //       res.status(400).json({ message: "User ID is missing in session" });
+  //       return;
+  //     }
       
-      const trips = await Trip.find({ userId });
-      res.status(200).json(trips);
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Unknown error" });
+  //     const trips = await Trip.find({ userId });
+  //     res.status(200).json(trips);
+  //   } catch (error) {
+  //     res.status(400).json({ message: error instanceof Error ? error.message : "Unknown error" });
+  //   }
+  // },
+
+  getAllTrips: async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.query.userId || req.session.userId;
+
+    if (!userId) {
+      res.status(400).json({ message: "User ID is missing in session" });
+      return;
     }
-  },
+
+    // ✅ Start building filter object
+    let filter: any = { userId };
+
+    // ✅ Filter by endDate >= given date
+    if (req.query.endDate_gte) {
+      filter.endDate = {
+        $gte: new Date(req.query.endDate_gte as string),
+      };
+    }
+
+    // ✅ Filter by startDate <= given date
+    if (req.query.startDate_lte) {
+      filter.startDate = {
+        $lte: new Date(req.query.startDate_lte as string),
+      };
+    }
+
+    // ✅ Filter by status
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    // ✅ Filter by adults count
+    if (req.query.adults) {
+      filter.adults = Number(req.query.adults);
+    }
+
+    console.log("Applied Filter:", filter);
+
+    // ✅ MongoDB query with filters
+    const trips = await Trip.find(filter);
+
+    res.status(200).json(trips);
+  } catch (error) {
+    res.status(400).json({
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+},
 
   /**
    * Create a new trip

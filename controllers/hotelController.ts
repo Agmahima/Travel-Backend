@@ -1,6 +1,9 @@
 import https from 'https';
 import { Request, Response } from 'express';
 import { HotelBooking } from '../models/HotelBooking';
+import Booking from '../models/Bookings';
+import { getOrCreateParentBooking, linkServiceToBooking, generateBookingReference } from '../utils/bookingHelpers';
+
 
 // Types and Interfaces
 interface ApiResponse<T = any> {
@@ -125,24 +128,39 @@ interface HotelDetailsQuery {
 }
 
 interface BookingRequest {
-  bookingId: string;
+  bookingId?: string;
+  tripId: string;
+  userId: string;
   hotelDetails: {
     hotelId: string;
     hotelName: string;
     address: string;
-    starRating: number;
-    propertyType: string;
+    starRating?: number;
+    propertyType?: string;
     checkInPolicy?: string;
     checkOutPolicy?: string;
+    coordinates?: {
+      latitude?: number;
+      longitude?: number;
+    };
   };
   stayDetails: {
     checkIn: string;
     checkOut: string;
     nights: number;
-    rooms: Array<{
+    rooms: {
+      roomType: string;
+      occupancy?: {
+        adults?: number;
+        children?: number;
+      };
       assignedTravelers?: string[];
-      [key: string]: any;
-    }>;
+    }[];
+    searchParams?: {              // ✅ Add this block
+      roomQuantity?: number;
+      adults?: number;
+      children?: number;
+    };
   };
   leadGuest: {
     travelerId: string;
@@ -160,6 +178,7 @@ interface BookingRequest {
   specialRequests?: string;
   additionalServices?: any[];
 }
+
 
 interface UpdateBookingStatusRequest {
   status: string;
@@ -206,7 +225,7 @@ class HotelController {
   private readonly baseUrl: string;
 
   constructor() {
-    this.rapidApiKey = process.env.RAPIDAPI_KEY || '';
+    this.rapidApiKey = process.env.RAPIDAPI_KEY || '61fd36de18mshb3497e3f27f8beap13ed6ejsn98fa204d7a62';
     this.baseUrl = 'booking-com15.p.rapidapi.com';
   }
 
@@ -640,90 +659,163 @@ class HotelController {
   }
 
   createHotelBooking = async (req: Request<{}, {}, BookingRequest>, res: Response): Promise<void> => {
-    try {
-      const {
-        bookingId,
-        hotelDetails,
-        stayDetails,
-        leadGuest,
-        pricing,
-        specialRequests,
-        additionalServices
-      } = req.body;
+  try {
+     const userId= req.session.userId;
+  const { tripId } = req.body;
+    const {
+      bookingId,
+      
+      hotelDetails,
+      stayDetails,
+      leadGuest,
+      pricing,
+      specialRequests,
+      additionalServices
+    } = req.body;
 
-      if (!bookingId || !hotelDetails || !stayDetails || !leadGuest || !pricing) {
-        res.status(400).json({
-          success: false,
-          message: 'Missing required booking information'
-        });
-        return;
-      }
+    console.log('Creating hotel booking for user:', userId, 'tripId:', tripId);
+    console.log(req.body);
 
-      const hotelBookingRef = `HB-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-      const hotelBooking = new HotelBooking({
-        bookingId,
-        hotelBookingRef,
-        hotelDetails: {
-          hotelId: hotelDetails.hotelId,
-          hotelName: hotelDetails.hotelName,
-          address: hotelDetails.address,
-          starRating: hotelDetails.starRating,
-          propertyType: hotelDetails.propertyType
-        },
-        stayDetails: {
-          checkIn: new Date(stayDetails.checkIn),
-          checkOut: new Date(stayDetails.checkOut),
-          nights: stayDetails.nights,
-          rooms: stayDetails.rooms.map(room => ({
-            ...room,
-            assignedTravelers: room.assignedTravelers || []
-          }))
-        },
-        leadGuest: {
-          travelerId: leadGuest.travelerId
-        },
-        pricing: {
-          basePrice: pricing.basePrice,
-          taxes: pricing.taxes || 0,
-          fees: pricing.fees || 0,
-          totalPrice: pricing.totalPrice,
-          currency: pricing.currency || 'INR',
-          priceBreakdown: pricing.priceBreakdown || []
-        },
-        policies: {
-          cancellation: pricing.cancellationPolicy || '',
-          payment: pricing.paymentPolicy || '',
-          checkIn: hotelDetails.checkInPolicy || '14:00',
-          checkOut: hotelDetails.checkOutPolicy || '12:00'
-        },
-        specialRequests: specialRequests || '',
-        additionalServices: additionalServices || [],
-        status: 'pending'
-      });
-
-      await hotelBooking.save();
-
-      res.status(201).json({
-        success: true,
-        data: {
-          hotelBookingId: hotelBooking._id,
-          hotelBookingRef: hotelBookingRef,
-          status: hotelBooking.status,
-          message: 'Hotel booking created successfully'
-        },
-        timestamp: new Date().toISOString()
-      });
-
-    } catch (error) {
-      console.error('Error creating hotel booking:', error);
-      res.status(500).json({
+    // ✅ Validate essential fields
+    if (!tripId || !userId || !hotelDetails || !stayDetails || !leadGuest || !pricing) {
+      res.status(400).json({
         success: false,
-        message: 'Failed to create hotel booking',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Missing required booking information (tripId, userId, hotelDetails, stayDetails, leadGuest, pricing required)'
       });
+      return;
     }
+
+    // ✅ Ensure parent booking exists or create a new draft booking
+    // let parentBooking = await Booking.findOne({ _id: bookingId }) || await Booking.findOne({ tripId, userId });
+
+    // if (!parentBooking) {
+    //   console.log("⚠️ No parent booking found. Creating new draft booking...");
+
+    //   const bookingReference = `BK-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    //   parentBooking = new Booking({
+    //     tripId,
+    //     userId,
+    //     bookingReference,
+    //     status: 'draft',
+    //     pricing: {
+    //       totalAmount: 0,
+    //       currency: 'INR'
+    //     },
+    //     paymentSummary: {
+    //       totalPaid: 0,
+    //       totalRefunded: 0,
+    //       paymentStatus: 'pending'
+    //     }
+    //   });
+
+    //   await parentBooking.save();
+    //   console.log("✅ Created new draft parent booking:", parentBooking._id);
+    // }
+
+    // // ✅ Generate hotel booking reference
+    // const hotelBookingRef = `HB-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+     const parentBooking = await getOrCreateParentBooking(
+      userId?.toString(), 
+      tripId, 
+      pricing.currency || 'INR'
+    );
+
+    console.log("✅ Parent booking:", parentBooking._id);
+
+    // Generate hotel booking reference
+    const hotelBookingRef = generateBookingReference('HB');
+
+    // ✅ Create hotel booking entry
+    const hotelBooking = new HotelBooking({
+      bookingId: parentBooking._id,
+      hotelBookingRef,
+      hotelDetails: {
+        hotelId: hotelDetails.hotelId,
+        hotelName: hotelDetails.hotelName,
+        address: hotelDetails.address,
+        starRating: hotelDetails.starRating,
+        propertyType: hotelDetails.propertyType,
+        
+      },
+      stayDetails: {
+        checkIn: new Date(stayDetails.checkIn),
+        checkOut: new Date(stayDetails.checkOut),
+        nights: stayDetails.nights,
+        searchParams: {
+          roomQuantity: stayDetails?.searchParams?.roomQuantity || 1,
+          adults: stayDetails?.searchParams?.adults || 1,
+          children: stayDetails?.searchParams?.children || 0
+        },
+        rooms: (stayDetails.rooms || []).map(room => ({
+          ...room,
+          occupancy: {
+            adults: room?.occupancy?.adults || 1,
+            children: room?.occupancy?.children || 0
+          },
+          assignedTravelers: room.assignedTravelers || []
+        }))
+      },
+      leadGuest: {
+        travelerId: leadGuest.travelerId
+      },
+      pricing: {
+        basePrice: pricing.basePrice,
+        taxes: pricing.taxes || 0,
+        fees: pricing.fees || 0,
+        totalPrice: pricing.totalPrice,
+        currency: pricing.currency || 'INR',
+        priceBreakdown: pricing.priceBreakdown || []
+      },
+      policies: {
+        cancellation: pricing.cancellationPolicy || '',
+        payment: pricing.paymentPolicy || '',
+        checkIn:  hotelDetails.checkInPolicy,
+        checkOut: hotelDetails.checkOutPolicy
+      },
+      specialRequests: specialRequests || '',
+      additionalServices: additionalServices || [],
+      status: 'draft'
+    });
+
+    await hotelBooking.save();
+
+    await linkServiceToBooking(
+      parentBooking._id,
+      'hotels',
+      hotelBooking._id,
+      pricing.totalPrice
+    );
+
+    // ✅ Link the hotel booking to parent booking
+    parentBooking.services.hotels.push(hotelBooking._id);
+    await parentBooking.save();
+
+    console.log('🏨 Hotel booking created:', hotelBooking._id);
+    console.log('🔗 Linked to parent booking:', parentBooking._id);
+
+    res.status(201).json({
+      success: true,
+      data: {
+        hotelBookingId: hotelBooking._id,
+        hotelBookingRef,
+        parentBookingId: parentBooking._id,
+        status: hotelBooking.status,
+        message: 'Hotel booking created successfully and linked to parent booking'
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating hotel booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create hotel booking',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
+};
+
 
   getHotelBooking = async (req: Request<{ bookingRef: string }>, res: Response): Promise<void> => {
     try {

@@ -1,103 +1,4 @@
-// import { timestamp } from "drizzle-orm/gel-core";
 
-// const mongoose = require('mongoose');
-// const { baseDbConnection } = require('../dbConnection'); // Adjust the path as necessary
-
-
-// const HotelBookingSchema = new mongoose.Schema({
-//     bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true },
-//     hotelBookingRef: {type: String, required:true, unique:true},
-
-//     hotelDetails: {
-//     hotelId: String,
-//     hotelName: { type: String, required: true },
-//     address: {
-//       street: String,
-//       city: String,
-//       state: String,
-//       country: String,
-//       zipCode: String
-//     },
-//     starRating: Number,
-//     propertyType: String
-//   },
-  
-//   // Stay Details
-//   stayDetails: {
-//     checkIn: { type: Date, required: true },
-//     checkOut: { type: Date, required: true },
-//     nights: { type: Number, required: true },
-//     rooms: [{
-//       roomType: String,
-//       roomDescription: String,
-//       bedType: String,
-//       roomSize: String,
-//       amenities: [String],
-//       occupancy: {
-//         adults: { type: Number, required: true, min: 1 },
-//         children: { type: Number, default: 0, min: 0 }
-//       },
-//       // Travelers assigned to this room
-//       assignedTravelers: [{
-//         travelerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Traveler', required: true },
-//         isPrimary: { type: Boolean, default: false } // Primary guest for the room
-//       }]
-//     }]
-//   },
-  
-//   // Guest Details (lead guest for check-in)
-//   leadGuest: {
-//     travelerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Traveler', required: true }
-//   },
-  
-//   pricing: {
-//     basePrice: Number,
-//     taxes: Number,
-//     fees: Number,
-//     totalPrice: { type: Number, required: true },
-//     currency: { type: String, default: 'INR' },
-//     priceBreakdown: [{
-//       date: Date,
-//       roomRate: Number,
-//       taxes: Number
-//     }]
-//   },
-  
-//   // Policies
-//   policies: {
-//     cancellation: String,
-//     payment: String,
-//     checkIn: String,
-//     checkOut: String
-//   },
-  
-//   // Special requests and services
-//   specialRequests: String,
-//   additionalServices: [{
-//     serviceType: String,
-//     description: String,
-//     price: Number,
-//     currency: String
-//   }],
-  
-//   status: {
-//     type: String,
-//     enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-//     default: 'pending'
-//   },
-  
-//   // Confirmation details
-//   confirmationNumber: String,
-//   voucherNumber: String,
-    
-
-    
-// },{timestamps:true});
-// // module.exports = baseDbConnection.model('HotelBooking', HotelBookingSchema); // Ensure 'HotelBooking' is exactly as used
-// const HotelBooking = baseDbConnection.model('HotelBooking', HotelBookingSchema);
-// export default HotelBooking; // ✅ Use default export
-
-// models/HotelBooking.js - Improved Schema
 import mongoose, { Document, Schema, Model } from 'mongoose';
 const { baseDbConnection } = require('../dbConnection');
 
@@ -128,8 +29,8 @@ interface IHotelBooking extends Document {
       addressTranslated?: string;
     };
     coordinates: {
-      latitude: number;
-      longitude: number;
+      latitude: { type: Number, required: false },
+    longitude: { type: Number, required: false },
       distanceToCenter?: number;
     };
     starRating?: number;
@@ -373,7 +274,7 @@ const HotelBookingSchema = new Schema<IHotelBooking>({
 
   // API Integration fields
   apiDetails: {
-    hotelId: { type: String, required: true, index: true },
+    hotelId: { type: String, index: true },
     blockId: String, // Room block ID from booking.com
     destId: String, // Destination ID
     searchType: String,
@@ -389,18 +290,18 @@ const HotelBookingSchema = new Schema<IHotelBooking>({
     
     address: {
       street: String,
-      city: { type: String, required: true },
+      city: { type: String },
       district: String,
       state: String,
-      country: { type: String, required: true },
+      country: { type: String},
       countryCode: String,
       zipCode: String,
       addressTranslated: String
     },
     
     coordinates: {
-      latitude: { type: Number, required: true },
-      longitude: { type: Number, required: true },
+      latitude: { type: Number },
+      longitude: { type: Number },
       distanceToCenter: Number // Distance to city center
     },
     
@@ -434,10 +335,10 @@ const HotelBookingSchema = new Schema<IHotelBooking>({
     nights: { type: Number, required: true, min: 1 },
     
     searchParams: {
-      adults: { type: Number, required: true, min: 1 },
+      adults: { type: Number, min: 1 },
       children: { type: Number, default: 0, min: 0 },
       childrenAges: [Number],
-      roomQuantity: { type: Number, required: true, min: 1 }
+      roomQuantity: { type: Number, min: 1 }
     },
 
     rooms: [{
@@ -578,16 +479,9 @@ const HotelBookingSchema = new Schema<IHotelBooking>({
       description: String
     },
     
-    checkIn: {
-      time: String,
-      instructions: String,
-      requirements: [String] // ID, credit card, etc.
-    },
+    checkIn: { type: String },
     
-    checkOut: {
-      time: String,
-      instructions: String
-    },
+    checkOut: { type: String },
     
     childrenPolicy: {
       allowChildren: Boolean,

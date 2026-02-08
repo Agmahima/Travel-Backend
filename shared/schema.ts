@@ -37,7 +37,16 @@ export const activitySchema = z.object({
   "sightseeing",
     "food",
   "night",
-"midday"]).default('other')
+  "midday",
+  "late afternoon",
+  "transport",
+  "dinner",
+  "early evening",
+  "late morning",
+  "midmorning",
+  "historical",
+  "breakfast"
+]).default('other')
 });
 
 // Schema for validating MEALS (what AI returns)
