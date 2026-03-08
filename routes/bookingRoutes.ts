@@ -1,7 +1,7 @@
 // src/routes/bookingRoutes.ts
 import { Router, Request, Response } from 'express';
 import { BookingController } from '../controllers/bookingController';
-import { authenticate } from '../middleware/authenticate';
+import { authenticate, AuthenticatedRequest } from '../middleware/authenticate';
 import { serviceAuth } from '../middleware/serviceAuth';
 import Booking from '../models/Bookings';
 import { Types } from 'mongoose';
@@ -236,6 +236,21 @@ router.patch('/:bookingId/payment', serviceAuth, async (req: Request, res: Respo
   }
 });
 
+router.get('/', authenticate, async (req:AuthenticatedRequest, res) => {
+
+  const userId = req.userId;
+
+
+
+  const bookings = await Booking.find({ userId })
+    .populate('tripId')
+    .sort({ createdAt: -1 });
+
+  res.json(bookings);
+  console.log('📦 User bookings fetched:', bookings.length);
+});
+
+
 
 // Get booking details
 router.get('/:bookingId', serviceAuth, bookingController.getBookingDetails);
@@ -250,7 +265,7 @@ router.post('/:bookingId/confirm', authenticate, bookingController.confirmBookin
 router.post('/:bookingId/cancel', authenticate, bookingController.cancelBooking);
 
 // Update payment summary
-router.patch('/:bookingId/payment-summary', authenticate, bookingController.updatePaymentSummary);
+router.patch('/:bookingId/payment-summary', serviceAuth, bookingController.updatePaymentSummary);
 
 // Health check
 router.get('/health', bookingController.healthCheck);

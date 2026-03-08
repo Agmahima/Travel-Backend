@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import { insertTransportationBookingSchema } from '../shared/schema';
 // const TransportationBooking = require('../models/TransportationBooking');
 import TransportationBooking from '../models/TransportationBooking'; // Adjust the path as necessary
+import { getOrCreateParentBooking,linkServiceToBooking } from '../utils/bookingHelpers';
 import { ZodError } from 'zod';
+import Trip from '../models/Trip';
 
 export const transportationBookingController = {
   
@@ -29,18 +31,59 @@ export const transportationBookingController = {
    */
   createBooking: async (req: Request, res: Response): Promise<void> => {
     try {
-      const userId = (req as any).user?.userId;
+      const userId = req.session.userId;
       if (!userId) {
-  res.status(401).json({ message: "Unauthorized" });
-  return;
-}
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
       const validatedData = insertTransportationBookingSchema.parse({
   ...req.body,
   userId
 });
+
+const parentBooking = await getOrCreateParentBooking(
+     userId.toString(),
+      validatedData.tripId,
+      "INR"
+    );
+
+    const trip = await Trip.findById(validatedData.tripId);
+
+if (!trip) {
+  res.status(404).json({ message: "Trip not found" });
+  return;
+}
+
+const pickupLocation = trip.destinations[0]?.location || "Default Pickup";
+const dropLocation = trip.destinations[trip.destinations.length - 1]?.location || "Default Drop";
+
+
+     // 🔥 2. Create Transportation Booking
+    const transportationBooking = await TransportationBooking.create({
+      ...validatedData,
+       pickupLocation,
+  dropLocation,
+      bookingId: parentBooking._id,
+      status: "draft"
+    });
+
+    // 🔥 3. Link to Parent Booking (VERY IMPORTANT)
+    await linkServiceToBooking(
+      parentBooking._id,
+      "cabs",
+      transportationBooking._id,
+      validatedData.price
+    );
+
       
-      const booking = await TransportationBooking.create(validatedData);
-      res.status(201).json(booking);
+       res.status(201).json({
+      success: true,
+      data: {
+        transportationBookingId: transportationBooking._id,
+        parentBookingId: parentBooking._id,
+        totalAmount: validatedData.price
+      }
+    });
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json({ message: "Validation error", errors: error.errors });

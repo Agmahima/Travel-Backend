@@ -8,6 +8,7 @@ interface IHotelBooking extends Document {
   hotelBookingRef: string;
   apiDetails: {
     hotelId: string;
+    offerId: string;
     blockId?: string;
     destId?: string;
     searchType?: string;
@@ -114,9 +115,15 @@ interface IHotelBooking extends Document {
     }>;
   };
   leadGuest: {
-    travelerId: mongoose.Types.ObjectId;
-    isPrimaryBooker: boolean;
-  };
+  travelerId: mongoose.Types.ObjectId;
+  title?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  isPrimaryBooker: boolean;
+};
+
   pricing: {
     basePrice: number;
     taxes: number;
@@ -208,7 +215,7 @@ interface IHotelBooking extends Document {
       dietary?: string[];
     };
   };
-  status: 'draft' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show' | 'completed';
+  status: 'draft' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show' | 'completed' | 'payment_failed';
   confirmation?: {
     confirmationNumber?: string;
     voucherNumber?: string;
@@ -275,6 +282,7 @@ const HotelBookingSchema = new Schema<IHotelBooking>({
   // API Integration fields
   apiDetails: {
     hotelId: { type: String, index: true },
+      offerId: { type: String, required: true, index: true }, // ✅ ADD THIS
     blockId: String, // Room block ID from booking.com
     destId: String, // Destination ID
     searchType: String,
@@ -410,13 +418,22 @@ const HotelBookingSchema = new Schema<IHotelBooking>({
 
   // Lead guest information
   leadGuest: {
-    travelerId: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'Traveler', 
-      required: true 
-    },
-    isPrimaryBooker: { type: Boolean, default: true }
+  travelerId: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'Traveler', 
+    required: true 
   },
+
+  // 🔥 Snapshot fields for supplier booking
+  title: { type: String },
+  firstName: { type: String },
+  lastName: { type: String },
+  phone: { type: String },
+  email: { type: String },
+
+  isPrimaryBooker: { type: Boolean, default: true }
+},
+
 
   // Comprehensive pricing
   pricing: {
@@ -526,7 +543,7 @@ const HotelBookingSchema = new Schema<IHotelBooking>({
   // Booking status and confirmation
   status: {
     type: String,
-    enum: ['draft', 'pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show', 'completed'],
+    enum: ['draft', 'pending','payment_failed', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show', 'completed'],
     default: 'draft'
   },
 

@@ -14,6 +14,9 @@ export const authenticate = (
   try {
     // Check for Authorization header
     const authHeader = req.headers.authorization;
+    console.log("Full headers:", req.headers);
+console.log("Authorization header raw:", req.headers.authorization);
+
     
     if (!authHeader) {
       res.status(401).json({ message: "No authorization header provided" });

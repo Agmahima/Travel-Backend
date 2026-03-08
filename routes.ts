@@ -139,19 +139,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // );
   // 1. Search destinations
 // GET /api/hotels/search-destinations?query=Mumbai
-app.get('/search-destinations', HotelController.searchDestinations);
+app.get('/api/hotels/search-destinations', HotelController.searchDestinations);
 
 // 2. Search hotels in a destination
 // GET /api/hotels/search?dest_id=-2092174&checkin_date=2025-09-22&checkout_date=2025-09-24&adults=1&room_qty=1
-app.get('/search', HotelController.searchHotels);
+app.get('/api/hotels/search', HotelController.searchHotels);
 
 // 3. Get detailed hotel information
 // GET /api/hotels/74717/details?arrival_date=2025-09-22&departure_date=2025-09-24&adults=1
-app.get('/:hotel_id/details', HotelController.getHotelDetails);
+app.get('/api/hotels/details', HotelController.getHotelDetails);
 
 // 4. Create hotel booking
 // POST /api/hotels/bookings
-app.post('/api/hotels/bookings', HotelController.createHotelBooking);
+app.post('/api/hotels/bookings', HotelController.createHotelDraftBooking);
 
 // 5. Get hotel booking by reference
 // GET /api/hotels/bookings/HB-123456789

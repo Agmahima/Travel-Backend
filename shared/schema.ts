@@ -45,7 +45,11 @@ export const activitySchema = z.object({
   "late morning",
   "midmorning",
   "historical",
-  "breakfast"
+  "breakfast",
+  "snack",
+  "early",
+  "brunch",
+  "arrival"
 ]).default('other')
 });
 
