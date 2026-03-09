@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // your frontend domain
+    origin: `${process.env.FRONTEND_URL}`, // your frontend domain
     credentials: true, // allow cookies
   })
 );

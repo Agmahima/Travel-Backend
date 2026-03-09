@@ -75,6 +75,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     itineraryController.generateItinerary
   );
 
+  app.post(
+  "/api/generate-activity-suggestion",
+  authenticate,
+  itineraryController.generateActivitySuggestion
+);
+
   // NEW: Itinerary Day Routes
   app.get(
     "/api/itinerary-days/trip/:tripId",

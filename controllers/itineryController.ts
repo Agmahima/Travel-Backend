@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY || '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',
+  apiKey: process.env.OPENROUTER_API_KEY ,
   defaultHeaders: {
     'HTTP-Referer': 'https://your-site-url.com',
     'X-Title': 'TravelPlannerAI',
@@ -34,7 +34,10 @@ export const itineraryController = {
 
       // Extract tripId from request body if it exists
       const { tripId, ...itineraryRequestData } = req.body;
-      
+
+       const travelStartDate: string = req.body.startDate || "";
+       const travelEndDate: string = req.body.endDate || "";
+
       // Validate the main itinerary data (without tripId)
       const validatedData = aiItineraryRequestSchema.parse(itineraryRequestData);
       console.log('Validated data:', JSON.stringify(validatedData, null, 2));
@@ -57,6 +60,17 @@ Create a travel itinerary based on:
 - Preferences: ${JSON.stringify(validatedData.preferences || {})}
 - Custom destinations: ${JSON.stringify(validatedData.destinations || [])}
 - Transportation: ${JSON.stringify(validatedData.transportationOptions || [])}
+
+CRITICAL RULES FOR DAY 1 (${travelStartDate}):
+- The traveler is DEPARTING from home on ${travelStartDate} and will ARRIVE at the destination in the afternoon.
+- Day 1 activities MUST start from 2:00 PM onwards (NO morning activities on Day 1).
+- Day 1 should only have 2-3 light activities: check-in, a short evening stroll, and dinner.
+- Do NOT schedule breakfast, morning sightseeing, or full-day tours on Day 1.
+
+RULES FOR LAST DAY (${travelEndDate}):
+- The traveler departs home on ${travelEndDate}.
+- Last day activities should wrap up by 12:00 PM (checkout + travel to airport/station).
+- Only schedule breakfast and 1 short morning activity on the last day.
 
 Respond with JSON only (inside \`\`\`json block), like this:
 \`\`\`json
@@ -156,6 +170,95 @@ Respond with JSON only (inside \`\`\`json block), like this:
       } else {
         res.status(500).json({ message: error.message || "Something went wrong" });
       }
+    }
+  },
+
+  // ── NEW: Generate a single activity suggestion to replace an existing one ──
+ generateActivitySuggestion: async (
+    req: AuthRequest,
+    res: Response
+  ): Promise<void> => {
+    try {
+      console.log('=== GENERATE ACTIVITY SUGGESTION ===');
+      const { destination, dayIndex, currentActivity, userPrompt } = req.body;
+      if (!destination || !currentActivity) {
+        res.status(400).json({ message: 'destination and currentActivity are required' });
+        return;
+      }
+      const prompt = `You are a travel activity planner. A traveler is visiting ${destination} on Day ${dayIndex}.
+
+They currently have this activity scheduled:
+- Title: ${currentActivity.title}
+- Time: ${currentActivity.time}
+- Location: ${currentActivity.location}
+- Description: ${currentActivity.description}
+- Cost: ${currentActivity.cost}
+
+The traveler wants a replacement because: "${userPrompt || 'They want a different activity at the same time slot.'}"
+
+Suggest ONE alternative activity for the SAME time slot (${currentActivity.time}) in ${destination}.
+The suggestion must be a REAL place that exists in ${destination}.
+
+Respond with ONLY valid JSON, no markdown, no explanation, no code blocks:
+{
+  "title": "Activity Name",
+  "description": "2-3 sentence description of the activity and why it is worth visiting",
+  "time": "${currentActivity.time}",
+  "location": "Specific place name in ${destination}",
+  "cost": "$XX",
+  "category": "${currentActivity.category || 'afternoon'}",
+  "duration": "${currentActivity.duration || '2 hours'}"
+}`;
+
+      console.log('=== CALLING OPENAI FOR ACTIVITY SUGGESTION ===');
+      const completion = await openai.chat.completions.create({
+        model: "openai/gpt-oss-20b:free",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert travel planner. Always respond with valid JSON only. No markdown, no explanation, no code blocks."
+          },
+          { role: "user", content: prompt }
+        ],
+      
+      });
+
+      const content = completion.choices?.[0]?.message?.content;
+      console.log('OpenAI raw response:', content);
+
+      if (!content) {
+        res.status(500).json({ message: 'AI did not return a suggestion' });
+        return;
+      }
+
+      // Strip markdown code fences if model wraps in ```json ... ```
+      const cleaned = content
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/gi, '')
+        .trim();
+
+      let suggestion;
+      try {
+        suggestion = JSON.parse(cleaned);
+      } catch (parseErr) {
+        console.error('JSON parse error for suggestion:', parseErr);
+        console.error('Raw content was:', content);
+        res.status(500).json({ message: 'AI returned invalid JSON for suggestion' });
+        return;
+      }
+
+      // Ensure the time slot and category are preserved
+      suggestion.time = suggestion.time || currentActivity.time;
+      suggestion.category = suggestion.category || currentActivity.category;
+      suggestion.duration = suggestion.duration || currentActivity.duration;
+
+      console.log('Returning suggestion:', suggestion);
+      res.status(200).json({ suggestion });
+
+    } catch (error: any) {
+      console.error('=== ERROR IN GENERATE ACTIVITY SUGGESTION ===');
+      console.error('Error:', error);
+      res.status(500).json({ message: error.message || 'Failed to generate suggestion' });
     }
   },
 

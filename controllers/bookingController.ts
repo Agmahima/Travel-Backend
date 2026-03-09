@@ -302,7 +302,7 @@ res.status(404).json({ success: false, error: "Booking not found" });
 
 
       refundResponse = await axios.post(
-        `http://localhost:5001/api/payment/${booking.paymentId}/refund`,
+       `${process.env.PAYMENT_SERVICE_URL}/api/payment/${booking.paymentId}/refund`,
         {
           amount: refundAmount,
           reason: reason || "Customer cancellation",
