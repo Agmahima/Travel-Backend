@@ -3,6 +3,7 @@ import { insertTripSchema } from '../shared/schema';
 // const Trip = require('../models/Trip');
 import Trip from '../models/Trip'; // Adjust the path as necessary
 import { ZodError } from 'zod';
+import { AuthenticatedRequest } from '../middleware/authenticate';
 
 export const tripController = {
   /**
@@ -76,28 +77,37 @@ export const tripController = {
   /**
    * Create a new trip
    */
-  createTrip: async (req: Request, res: Response): Promise<void> => {
-    try {
-      console.log('Request body:', req.body);
-      console.log('Session:', req.session);
-      console.log('Session userId:', req.session?.userId);
-      const validatedData = insertTripSchema.parse({ 
-        ...req.body, 
-        // userId: req.session.userId 
-        userId: req.body.userId || req.session.userId // Use body or session userId
-      });
-      
-      const trip = await Trip.create(validatedData);
-      res.status(201).json(trip);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({ message: "Validation error", errors: error.errors });
-      } else {
-        res.status(400).json({ message: error instanceof Error ? error.message : "Unknown error" });
-        console.error("Error creating trip:", error);
-      }
+  createTrip: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    console.log("Request body:", req.body);
+    console.log("UserId from JWT:", req.userId);
+
+    if (!req.userId) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
     }
-  },
+
+    const validatedData = insertTripSchema.parse({
+      ...req.body,
+      userId: req.userId
+    });
+
+    const trip = await Trip.create(validatedData);
+
+    res.status(201).json(trip);
+
+  } catch (error) {
+    console.error("Error creating trip:", error);
+
+    if (error instanceof ZodError) {
+      res.status(400).json({ message: "Validation error", errors: error.errors });
+    } else {
+      res.status(400).json({
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+},
 
   /**
    * Get trip by ID
