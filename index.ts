@@ -38,6 +38,10 @@ app.use(
   })
 );
 
+app.get('/', (req: Request, res: Response) => {
+  res.send('Booking Service API is running');
+});
+
 // Request logger middleware for /api routes
 app.use((req, res, next) => {
   const start = Date.now();
