@@ -55,9 +55,9 @@ export const activitySchema = z.object({
 
 // Schema for validating MEALS (what AI returns)
 export const mealsSchema = z.object({
-  breakfast: z.string().default(''),
-  lunch: z.string().default(''),
-  dinner: z.string().default('')
+  breakfast: z.string().nullable().optional().default(""),
+  lunch: z.string().nullable().optional().default(""),
+  dinner: z.string().nullable().optional().default(""),
 });
 
 // Schema for validating individual DAY (what AI returns)
