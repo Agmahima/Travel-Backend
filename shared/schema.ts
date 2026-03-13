@@ -23,34 +23,7 @@ export const activitySchema = z.object({
   duration: z.string().default(''),
   location: z.string().default(''),
   cost: z.string().default(''),
-  category: z.enum(["morning",
-    "lunch",
-    "afternoon",
-    "evening",
-    "other",
-    "cultural",
-    "meal",
-    "educational",
-    "shopping",
-    "travel",
-    "nature",
-  "sightseeing",
-    "food",
-  "night",
-  "midday",
-  "late afternoon",
-  "transport",
-  "dinner",
-  "early evening",
-  "late morning",
-  "midmorning",
-  "historical",
-  "breakfast",
-  "snack",
-  "early",
-  "brunch",
-  "arrival"
-]).default('other')
+  category: z.string()
 });
 
 // Schema for validating MEALS (what AI returns)
