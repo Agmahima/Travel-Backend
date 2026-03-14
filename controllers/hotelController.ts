@@ -1662,15 +1662,15 @@ createHotelDraftBooking = async (req: AuthenticatedRequest, res: Response): Prom
     }
 
     // 🔎 Revalidate offer before draft
-    const offerCheck = await amadeusService.getHotelOffer(offerId);
+    // const offerCheck = await amadeusService.getHotelOffer(offerId);
 
-    if (!offerCheck || !offerCheck.offers?.[0]) {
-      res.status(400).json({
-        success: false,
-        message: 'Hotel offer is no longer available'
-      });
-      return;
-    }
+    // if (!offerCheck || !offerCheck.offers?.[0]) {
+    //   res.status(400).json({
+    //     success: false,
+    //     message: 'Hotel offer is no longer available'
+    //   });
+    //   return;
+    // }
 
     const parentBooking = await getOrCreateParentBooking(
       userId.toString(),
