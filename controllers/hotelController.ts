@@ -1678,6 +1678,27 @@ createHotelDraftBooking = async (req: AuthenticatedRequest, res: Response): Prom
       pricing.currency || 'INR'
     );
 
+    // ← ADD THIS: If hotel already exists in parent booking, remove it first
+if (parentBooking.services.hotels.length > 0) {
+  console.log('🗑️ Removing previous hotel bookings...');
+  
+  // Delete all previous hotel bookings for this parent booking
+  await HotelBooking.deleteMany({ bookingId: parentBooking._id });
+  
+  // Reset hotel pricing in parent booking
+  await Booking.findByIdAndUpdate(parentBooking._id, {
+    $set: { 
+      'services.hotels': [],
+      'pricing.breakdown.hotels': 0
+    },
+    $inc: {
+      'pricing.totalAmount': -parentBooking.pricing.breakdown.hotels
+    }
+  });
+  
+  console.log('✅ Cleared previous hotel bookings');
+}
+
     const hotelBookingRef = generateBookingReference('HB');
 
     // Extract clean address
