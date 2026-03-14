@@ -157,7 +157,7 @@ app.get('/api/hotels/details', HotelController.getHotelDetails);
 
 // 4. Create hotel booking
 // POST /api/hotels/bookings
-app.post('/api/hotels/bookings', HotelController.createHotelDraftBooking);
+app.post('/api/hotels/bookings', authenticate, HotelController.createHotelDraftBooking);
 
 // 5. Get hotel booking by reference
 // GET /api/hotels/bookings/HB-123456789
