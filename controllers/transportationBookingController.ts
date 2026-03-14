@@ -5,7 +5,6 @@ import TransportationBooking from '../models/TransportationBooking'; // Adjust t
 import { getOrCreateParentBooking,linkServiceToBooking } from '../utils/bookingHelpers';
 import { ZodError } from 'zod';
 import Trip from '../models/Trip';
-import { AuthenticatedRequest } from '../middleware/authenticate';
 
 export const transportationBookingController = {
   
@@ -30,10 +29,9 @@ export const transportationBookingController = {
   /**
    * Create a new booking
    */
-  createBooking: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  createBooking: async (req: Request, res: Response): Promise<void> => {
     try {
-      // const userId = req.session.userId;
-      const userId = req.userId; // ← clean JWT userId
+      const userId = req.session.userId;
       if (!userId) {
         res.status(401).json({ message: "Unauthorized" });
         return;
