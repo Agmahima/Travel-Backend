@@ -25,9 +25,10 @@ export const tripController = {
   //   }
   // },
 
-  getAllTrips: async (req: Request, res: Response): Promise<void> => {
+  getAllTrips: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const userId = req.query.userId || req.session.userId;
+    // const userId = req.query.userId || req.session.userId;
+    const userId = req.userId;
 
     if (!userId) {
       res.status(400).json({ message: "User ID is missing in session" });
@@ -112,7 +113,7 @@ export const tripController = {
   /**
    * Get trip by ID
    */
-  getTripById: async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  getTripById: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const tripId = req.params.id;
       const trip = await Trip.findById(tripId);
@@ -123,7 +124,7 @@ export const tripController = {
       }
       
       // Check if the trip belongs to the current user
-      if (trip.userId.toString() !== req.session.userId) {
+      if (trip.userId.toString() !== req.userId) {
         res.status(403).json({ message: "Unauthorized" });
         return;
       }
@@ -137,7 +138,7 @@ export const tripController = {
   /**
    * Update trip by ID
    */
-  updateTrip: async (req: Request<{ id: string }, any, any>, res: Response): Promise<void> => {
+  updateTrip: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const tripId = req.params.id;
       const trip = await Trip.findById(tripId);
@@ -148,7 +149,7 @@ export const tripController = {
       }
       
       // Check if the trip belongs to the current user
-      if (trip.userId.toString() !== req.session.userId) {
+      if (trip.userId.toString() !== req.userId) {
         res.status(403).json({ message: "Unauthorized" });
         return;
       }
@@ -168,7 +169,7 @@ export const tripController = {
   /**
    * Delete trip by ID
    */
-  deleteTrip: async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  deleteTrip: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const tripId = req.params.id;
       const trip = await Trip.findById(tripId);
@@ -179,7 +180,7 @@ export const tripController = {
       }
       
       // Check if the trip belongs to the current user
-      if (trip.userId.toString() !== req.session.userId) {
+      if (trip.userId.toString() !== req.userId) {
         res.status(403).json({ message: "Unauthorized" });
         return;
       }
