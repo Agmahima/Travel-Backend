@@ -1112,6 +1112,7 @@ import googlePlacesService from '../services/googlePlaces.service';
 import { getOrCreateParentBooking, linkServiceToBooking, generateBookingReference } from '../utils/bookingHelpers';
 import { getCityCode } from '../utils/cityCodeMapper';
 import { link } from 'fs';
+import { AuthenticatedRequest } from '../middleware/authenticate';
 
 interface SearchDestinationsQuery {
   query?: string;
@@ -1636,9 +1637,11 @@ class HotelController {
   }
 
   // CREATE DRAFT BOOKING
-createHotelDraftBooking = async (req: Request<{}, {}, BookingRequest>, res: Response): Promise<void> => {
+createHotelDraftBooking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const userId = req.session.userId;
+    // const userId = req.session.userId;
+    const userId = req.userId;  // ← clean JWT userId
+
     const {
       tripId,
       offerId,
