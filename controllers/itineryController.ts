@@ -6,7 +6,7 @@ import OpenAI from 'openai';
 import mongoose from 'mongoose';
 
 const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
+  // baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY ,
   defaultHeaders: {
     'HTTP-Referer': 'https://your-site-url.com',
@@ -108,7 +108,7 @@ Respond with JSON only (inside \`\`\`json block), like this:
 
       console.log('=== CALLING OPENAI API ===');
       const completion = await openai.chat.completions.create({
-        model: "openai/gpt-oss-20b:free",
+        model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: "You are an expert travel planner." },
           { role: "user", content: prompt }
@@ -212,7 +212,7 @@ Respond with ONLY valid JSON, no markdown, no explanation, no code blocks:
 
       console.log('=== CALLING OPENAI FOR ACTIVITY SUGGESTION ===');
       const completion = await openai.chat.completions.create({
-        model: "openai/gpt-oss-20b:free",
+        model: "gpt-4.1-mini",
         messages: [
           {
             role: "system",
