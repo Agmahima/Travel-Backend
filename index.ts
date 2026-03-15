@@ -91,6 +91,33 @@ function serveStatic(app: Express) {
   app.use(express.static("public")); // Replace 'public' if static assets live elsewhere
 }
 
+app.get('/api/cities/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || (query as string).length < 2) {
+      res.json({ success: true, data: [] });
+      return;
+    }
+
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query as string)}&types=(cities)&key=${process.env.GOOGLE_PLACES_API_KEY}`
+    );
+    
+    const data = await response.json();
+    
+    const cities = data.predictions?.map((p: any) => ({
+      name: p.structured_formatting.main_text,
+      fullName: p.description,
+      placeId: p.place_id,
+    })) || [];
+
+    res.json({ success: true, data: cities });
+  } catch (error) {
+    res.status(500).json({ success: false, data: [] });
+  }
+});
+
 // Start app
 (async () => {
   try {
@@ -112,8 +139,13 @@ function serveStatic(app: Express) {
     // Serve static files
     serveStatic(app);
 
+
+
 const port = Number(process.env.PORT) || 5000;
 
+// app.listen(port, "localhost", () => {
+//       console.log(`Server is running on port ${port}`);
+//     });
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);
 });
